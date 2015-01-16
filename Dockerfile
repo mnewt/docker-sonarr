@@ -1,30 +1,31 @@
-FROM debian:jessie
+FROM ubuntu:trusty
 
-# use sonarr master branch, user can change branch and update within sonarr
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys FDA5DFFC \
-  && echo "deb http://apt.sonarr.tv/ master main" | tee -a /etc/apt/sources.list \
-  && apt-get update -q \
-  && apt-get install -qy nzbdrone \
-  ; apt-get clean \
-  ; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+MAINTAINER Matthew Newton <contact@mnewton.com>
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get -q update
+RUN apt-get -qy install apt-transport-https
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys FDA5DFFC
+RUN echo "deb https://apt.sonarr.tv/ develop main" | sudo tee /etc/apt/sources.list.d/sonarr.list
+RUN apt-get -q update
+RUN apt-get install -qy nzbdrone
 
 RUN chown -R nobody:users /opt/NzbDrone \
-  ; mkdir -p /volumes/config/sonarr /volumes/completed /volumes/media \
-  && chown -R nobody:users /volumes
+  ; mkdir -p /config/sonarr /data/complete /data/media
 
 EXPOSE 8989
-VOLUME /volumes/config
-VOLUME /volumes/completed
-VOLUME /volumes/media
+VOLUME /config
+VOLUME /data
 
-ADD start.sh /
+ADD start.sh /start.sh
 RUN chmod +x /start.sh
 
 ADD sonarr-update.sh /sonarr-update.sh
 RUN chmod 755 /sonarr-update.sh \
   && chown nobody:users /sonarr-update.sh
 
-USER nobody
+RUN useradd matt -G matt
+USER matt
 WORKDIR /opt/NzbDrone
 
 ENTRYPOINT ["/start.sh"]
